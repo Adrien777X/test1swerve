@@ -16,6 +16,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
+import java.nio.file.Path;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathPlannerPath;
+
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -42,8 +47,8 @@ public class RobotContainer {
   
 
   SwerveInputStream driveAngularVelocity = SwerveInputStream.of(drivebase.getSwerveDrive(),
-                                                                        () -> m_driverController.getLeftY() * -1, //valor y do manche esquerdo do joystick prev era -1
-                                                                        () -> m_driverController.getLeftX() * -1) //valor x do manche esquerdo do joystick
+                                                                        () -> m_driverController.getLeftY() * 1, //valor y do manche esquerdo do joystick prev era -1
+                                                                        () -> m_driverController.getLeftX() * 1) //valor x do manche esquerdo do joystick
                                                                         .withControllerRotationAxis(m_driverController::getRightX) //valor x do manche direita do joystick
                                                                         .deadband(OperatorConstants.DEADBAND)     
                                                                         .scaleTranslation(0.8)               
@@ -82,7 +87,8 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
+    return drivebase.getAutonomousCommand("New Path");
     // An example command will be run in autonomous
-    return Autos.exampleAuto(m_exampleSubsystem);
+    //return Autos.exampleAuto(m_exampleSubsystem);
   }
 }
