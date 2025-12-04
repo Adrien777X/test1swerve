@@ -30,6 +30,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableInstance;
+
 import static edu.wpi.first.units.Units.Meter;
 
 public class SwerveSubsystem extends SubsystemBase {
@@ -181,5 +183,112 @@ public class SwerveSubsystem extends SubsystemBase {
   {
     // Create a path following command using AutoBuilder. This will also trigger event markers.
     return new PathPlannerAuto(pathName);
+  }
+  // ---------------------------
+  // LIMELIGHT INTEGRATION BLOCK
+  // ---------------------------
+
+  // Name of your limelight
+  private static final String LIMELIGHT = "limelight";
+
+  // Basic tuning constants — you SHOULD replace these with real robot values
+  private static final double LIMELIGHT_HEIGHT = 0.50;   // meters (your LL lens height)
+  private static final double LIMELIGHT_ANGLE = 25.0;    // degrees (your LL mounting angle)
+  private static final double APRILTAG_HEIGHT = 0.70;    // meters (2025 Reefscape tags)
+  private static final double X_P = 0.014;               // strafe gain
+  private static final double Y_P = 0.04;                // forward gain
+  private static final double Z_P = 0.40;                // rotation gain
+
+
+  // ---- Basic Accessors ----
+
+  public boolean llHasTarget() {
+     return NetworkTableInstance.getDefault()
+              .getTable(LIMELIGHT)
+              .getEntry("tv")
+              .getDouble(0) > 0.5;
+  }
+
+  public double llTX() {
+      return NetworkTableInstance.getDefault()
+              .getTable(LIMELIGHT)
+              .getEntry("tx")
+              .getDouble(0.0);
+  }
+
+  public double llTY() {
+      return NetworkTableInstance.getDefault()
+              .getTable(LIMELIGHT)
+              .getEntry("ty")
+              .getDouble(0.0);
+  }
+
+public double[] llRobotSpacePose() {
+    return NetworkTableInstance.getDefault()
+            .getTable(LIMELIGHT)
+            .getEntry("targetpose_robotspace")
+            .getDoubleArray(new double[6]);
+}
+
+
+  // ---- Velocity Calculations ----
+
+  // Forward/back alignment (ty)
+  public double llForwardVel() {
+    double ty = llTY();
+    double v = -ty * Y_P * 3.0;
+    return Math.abs(ty) > 0.5 ? v : 0.0;
+  }
+
+  // Strafe left/right alignment (tx)
+  public double llStrafeVel() {
+    double tx = llTX();
+    double v = -tx * X_P * 3.5;
+    return Math.abs(tx) > 0.5 ? v : 0.0;
+  }
+
+  // Rotation alignment (robot-space Z)
+  public double llRotateVel() {
+    double[] pose = llRobotSpacePose();
+    double z = pose.length >= 6 ? pose[5] : 0.0;
+    double rot = -z * Z_P * 0.8;
+    return Math.abs(z) > 0.1 ? rot : 0.0;
+  }
+
+
+  // ---- Limelight Commands ----
+
+  // Slide left/right to center (tx)
+  public Command llCenterCommand() {
+    return run(() -> {
+        double vy = llStrafeVel();
+        swerveDrive.driveFieldOriented(new ChassisSpeeds(0.0, vy, 0.0));
+    });
+  }
+
+  // Drive forward/back to correct distance (ty)
+  public Command llForwardCommand() {
+    return run(() -> {
+        double vx = llForwardVel();
+        swerveDrive.driveFieldOriented(new ChassisSpeeds(vx, 0.0, 0.0));
+    });
+  }
+
+  // Rotate to align robot yaw to tag
+  public Command llRotateCommand() {
+    return run(() -> {
+        double wz = llRotateVel();
+        swerveDrive.driveFieldOriented(new ChassisSpeeds(0.0, 0.0, wz));
+    });
+  }
+
+  // Full 3-axis alignment (X/Y + rotation)
+  public Command llFullAlignCommand() {
+    return run(() -> {
+        double vx = llForwardVel();
+        double vy = llStrafeVel();
+        double wz = llRotateVel();
+        swerveDrive.driveFieldOriented(new ChassisSpeeds(vx, vy, wz));
+    });
   }
 }

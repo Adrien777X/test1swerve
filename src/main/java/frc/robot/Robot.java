@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -53,13 +54,10 @@ public class Robot extends TimedRobot {
     // robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
-    double xOffset = LimelightHelpers.getTX("limelight");
-    double targetArea = LimelightHelpers.getTA("limelight");
-    double tagId = LimelightHelpers.getFiducialID("limelight");
 
-    SmartDashboard.putNumber("Limelight_X_Offset", xOffset);
-    SmartDashboard.putNumber("Limelight_Target_Area", targetArea);
-    SmartDashboard.putNumber("AprilTag_ID", tagId);
+    System.out.println("tv: " + NetworkTableInstance.getDefault().getTable("limelight").getEntry("tv").getDouble(0));
+    System.out.println("tx: " + NetworkTableInstance.getDefault().getTable("limelight").getEntry("tx").getDouble(0));
+    System.out.println("ty: " + NetworkTableInstance.getDefault().getTable("limelight").getEntry("ty").getDouble(0));
   }
 
   /** This function is called once each time the robot enters Disabled mode. */
